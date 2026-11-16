@@ -10,6 +10,11 @@ from src.middlewares.requests import RequestControl
 from src.routes import auth, datasets, jobs, reports
 from src.controllers import catalog
 from migrations.initial import migrate
+try:  # 联合试验（联邦汇总）子系统：纯标准库实现，挂载失败不影响主服务
+    from src.federation.fastapi_router import router as federation_router
+except Exception:
+    federation_router = None
+    logging.exception('Federation router unavailable')
 @asynccontextmanager
 async def lifespan(app):
     migrate()
@@ -31,3 +36,4 @@ def health():
     r=Redis.from_url(REDIS_URL,socket_timeout=2);r.ping();r.close()
     return {'status':'healthy'}
 for router in [auth.router,datasets.router,jobs.router,reports.router,catalog.router]:app.include_router(router)
+if federation_router is not None:app.include_router(federation_router)

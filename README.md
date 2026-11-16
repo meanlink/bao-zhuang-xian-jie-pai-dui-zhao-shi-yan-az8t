@@ -38,6 +38,13 @@ COMPOSE_PROJECT_NAME=pack-welch；FRONTEND_PORT=18203；BACKEND_PORT=19203；DB_
 
 ## 数据与验收
 所有数据为固定随机种子生成的模拟业务数据，不能作为实际生产决策证据。项目独立算法、输入边界及业务局限详见 BUSINESS.md。测试与截图统一存放 ../../test-artifacts/gb-1004/，源码不含日志/截图/测试报告。
+
+## 联合试验（联邦汇总，原始节拍不出车间）
+两地车间不交换原始节拍，只交换各站件数、均值与平方离差和，中心按合并样本执行与本项目同口径的 Welch 比较。该子系统为**纯 Python 标准库**实现（SQLite + http.server，自带 t 分布），可独立于 FastAPI/MySQL/Redis 运行；中心库与简报页均不含任何原值。说明、规则映射与命令见 [backend/src/federation/README.md](backend/src/federation/README.md)。
+- 独立运行：`python -m src.federation.cli center --db center.db --port 19303`
+- 内嵌运行：docker-compose 的 `federation-center` 服务，经 nginx `/federation/` 暴露简报页；主应用另挂载 `/federation` REST 路由。
+- 测试：`python -m unittest src.federation.tests.test_statistics src.federation.tests.test_service src.federation.tests.test_end_to_end`
+
 清理本项目演示数据：`docker compose down -v --remove-orphans`（会删除本项目命名卷）。
 
 ## License

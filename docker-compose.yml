@@ -60,12 +60,26 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+  federation-center:
+    # 联合试验中心：纯标准库服务，仅保存各站 n/mean/ss 汇总，不含原始节拍
+    build: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-pack-welch}-federation
+    command: ["python", "-m", "src.federation.cli", "center", "--db", "/artifacts/federation-center.db", "--host", "0.0.0.0", "--port", "8010"]
+    environment:
+      FEDERATION_DB: /artifacts/federation-center.db
+    volumes: ["analysis-artifacts:/artifacts"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/health')"]
+      interval: 4s
+      timeout: 3s
+      retries: 25
   frontend:
     build: ./frontend
     container_name: ${COMPOSE_PROJECT_NAME:-pack-welch}-frontend
     ports: ["${FRONTEND_PORT:-18203}:80"]
     depends_on:
       backend: {condition: service_healthy}
+      federation-center: {condition: service_healthy}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 4s
